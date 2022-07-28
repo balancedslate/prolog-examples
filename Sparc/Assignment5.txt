@@ -1,0 +1,74 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Template for a SPARC file
+%% Author: Levi Kenley
+%% Description:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+sorts
+    #people = {martha, thomas, fred, wilma, richard, helen, mrSmith, mrsSmith}.
+    #property = {wayneEnterprises, mrSmithsMoney, mrsSmithsMoney, dino, lifeInsurance, house}.
+    #charity = {charity}.
+    #benefit = #people + #charity.
+    #default = d_inherit(#people, #property).
+predicates
+    spouse(#people, #people).
+    inherit(#benefit, #property).
+    dead(#benefit).
+    investigation(#people).
+    owns(#people, #property).
+    beneficiary(#benefit, #property).
+    ab(#default).
+rules
+    spouse(X,Y) :- spouse(Y,X).
+    
+    beneficiary(X, Property) :- spouse(X,Y),
+                                owns(Y, Property),
+                                not -beneficiary(X, Property).
+                                
+    
+    inherit(X, Property) :- beneficiary(X, Property),
+                        not ab(d_inherit(X, Property)),
+                        not dead(X).
+                        
+    inherit(charity, Property) :- beneficiary(charity, Property),
+                            owns(Y, Property),
+                            dead(Y).
+    
+    ab(d_inherit(X, Property)) :- investigation(X).
+    
+    -inherit(X, Property) :- dead(X).
+    
+    -beneficiary(X, Property) :- beneficiary(Y, Property),
+                                X != Y.
+    
+    
+    %% Problem #1
+    
+    spouse(martha, thomas).
+    owns(thomas, wayneEnterprises).
+    dead(martha).
+    dead(thomas).
+    
+    %% Problem #2
+    
+    spouse(fred, wilma).
+    owns(fred, dino).
+    dead(fred).
+    
+    %% Problem #3
+    
+    spouse(richard, helen).
+    owns(helen, lifeInsurance).
+    investigation(richard).
+    dead(helen).
+    
+    %% Problem 4
+    
+    spouse(mrSmith, mrsSmith).
+    owns(mrSmith, mrSmithsMoney).
+    owns(mrSmith, house).
+    owns(mrsSmith, mrsSmithsMoney).
+    beneficiary(charity, mrSmithsMoney).
+    beneficiary(charity, mrsSmithsMoney).
+    dead(mrSmith).
+    

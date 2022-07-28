@@ -1,0 +1,56 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Template for a SPARC file
+%% Author: Levi Kenley
+%% Description: Roadrunner HW4
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+sorts
+    #animal = {tr, wileE}.
+    #class = {animal, bird, mammal, coyote, roadrunner}.
+    
+predicates
+    is_subclass(#class,#class).
+    subclass(#class,#class).
+    is_a(#animal,#class).
+    member(#animal,#class).
+    siblings(#class,#class).
+    
+    faster(#animal, #animal).
+    
+rules
+    is_subclass(bird, animal).
+    is_subclass(mammal, animal).
+    is_subclass(coyote, mammal).
+    is_subclass(roadrunner, bird).
+    -is_subclass(bird, mammal).
+    
+    subclass(X,Y) :- is_subclass(X,Y).
+
+    subclass(X,Y) :- is_subclass(X,Y),
+                       subclass(Z,Y).
+    
+    -subclass(X,Y) :- not subclass(X,Y).
+    
+    is_a(tr, roadrunner).
+    is_a(wileE, coyote). 
+    
+    
+    member(X,Y) :- is_a(X,Y).
+    
+    member(X,Y) :- is_a(X,Z),
+                   subclass(Z,Y).
+                   
+    siblings(X,Y) :- is_subclass(X,Z),
+                       is_subclass(Y,Z),
+                       X != Y.
+                       
+    -member(X,Y) :- member(X,Z),
+                    siblings(Z,Y),
+                    Z != Y.
+    
+    faster(X, Y) :- member(X, roadrunner),
+                    member(Y, mammal).
+
+    -faster(X, Y) :- member(Y, roadrunner),
+                     member(X, mammal).
+                  

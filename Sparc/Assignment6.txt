@@ -1,0 +1,103 @@
+Problem 1: 
+
+Starting ASP rules with the defined fluent : 
+
+has_ingredients :- has(wheat), has(egg), has(sugar).
+-has_ingredients :- not has_ingredients.
+
+A. {has(cake), has(wheat), has(egg)}
+This is state, although it does not satisify the requirements, there are no contradictions
+B. {has(cake), ¬has(cake), has(wheat), has(egg), has(sugar), has(oven),
+has ingredients}
+This is not a state, becaue you cannot has(cake) and -has(cake) in the same state.
+C. {has(cake), has(wheat), has(egg), has(sugar), has(oven), ¬has ingredients}
+This is not a state because the CWA creates a contradiction with has_ingredients
+D. {has(cake), has(wheat), has(egg), has(sugar), has(oven), has ingredients}
+This is a valid state of literals to compute the answer set.
+E.{has(cake), ¬has(wheat), ¬has(egg), has(sugar), has(oven), ¬has ingredients}
+This is valid state of literals, because the CWA is never needed due to not having wheat,
+so -has_ingredients does not create a contradiction.
+
+
+Problem 2: Encode into a Sparc Program
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Template for a SPARC file
+%% Author: Levi Kenley
+%% Description: SParc Program for HW6
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#const n = 1.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sorts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#ingredients = {egg,wheat,sugar,oven,cake}.
+
+#inertial_fluent = has(#ingredients).
+
+#defined_fluent = {has_ingredients}.
+
+#fluent = #inertial_fluent + #defined_fluent.
+          
+#action = bake(#ingredients).
+
+#step = 0..n.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+holds(#fluent,#step).
+occurs(#action,#step).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+rules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% has cake if bake cake, and has ingriedents
+holds(has(cake), I+1) :- occurs(bake(cake),I),
+                        holds(has_ingredients, I).
+   
+%% has ingredients, if has the ingredients                      
+holds(has_ingredients, I) :- holds(has(egg),I),
+                  holds(has(wheat),I),
+                  holds(has(sugar), I).
+
+%% CWA for Defined Fluents
+-holds(F,I) :- #defined_fluent(F),
+               not holds(F,I).
+
+%% General Inertia Axiom
+
+holds(F,I+1) :- #inertial_fluent(F),
+                holds(F,I),
+                not -holds(F,I+1).
+
+-holds(F,I+1) :- #inertial_fluent(F),
+                 -holds(F,I),
+                 not holds(F,I+1).
+                 
+%% CWA for Actions
+
+-occurs(A,I) :- not occurs(A,I).
+
+-occurs(A,I) :- not holds(has(oven),I).
+
+-holds(has(oven),I) :- not holds(has(oven),I).
+
+
+%% Initialize the World
+
+-holds(has(cake), 0).
+holds(has(wheat), 0).
+holds(has(egg), 0).
+holds(has(sugar), 0).
+holds(has(oven), 0).
+-holds(has(cake), 0).
+holds(has_ingredients, 0).
+
+occurs(bake(cake), 0).

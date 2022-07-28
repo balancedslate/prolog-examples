@@ -1,0 +1,186 @@
+AL System Description:  By Levi Kenley
+
+
+%% You must have at least 2 Iron and 1 Stick to craft a sword
+craft(sword) causes has(sword, X + 1) if has(sword, X),
+                                            has(iron, Y),
+                                            has(stick, Z),
+                                            Y >= 2, Z >= 1.
+
+%% Crafting causes you to lose 2 iron ONLY if successful
+craft(sword) causes has(iron, X - 2) if has(iron, X),
+                                            has(sword, Y),
+                                            Y > 0.
+
+%% Crafting causes you to lose 1 stick ONLY if successful
+craft(sword) causes has(stick, X - 1) if has(stick, X),
+                                            has(sword, Y),
+                                            Y > 0.
+
+%% Smelting requires at least 1 iron ore, and will give you 1 iron
+smelt(iron_ore) causes has(iron, X + 1) if has(iron, X),
+                                        has(iron_ore, Y),
+                                        Y >= 0.
+
+%% Smelting will remove 1 iron ore from your inventory, ONLY if successful
+smelt(iron_ore) causes has(iron_ore, X - 1) if has(iron_ore, X),
+                                                has(iron, Y),
+                                                Y > 0.
+
+%% You cannot craft without a crafting table
+impossible craft(sword) if has(crafting_table, X), X < 0.
+
+%%impossible to smelt without a furnace
+impossible smelt(iron_ore) if has(furnace, X), X < 0.
+
+%impossible to have differing amounts of the same item
+impossible has(item, amt2) if has(item, amt1), amt1 != amt2.
+
+
+SPARC Planner :
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#const n = 6.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sorts
+
+#step = 0..n.
+#amt = 0..6.
+
+#material = {iron, stick}.
+#raw_good = {iron_ore}.
+#tool = {furnace, crafting_table}.
+#weapon ={sword}.
+
+#item = #material + #tool + #weapon + #raw_good.
+
+#inertial_fluent = has(#item,#amt).
+                              
+#fluent = #inertial_fluent.
+
+#action = craft(#weapon) + smelt(#raw_good).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+predicates
+
+holds(#fluent, #step).
+occurs(#action, #step).
+success().
+goal(#step).
+something_happened(#step).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+rules
+
+%% Has sword if craft occurs and has enough materials
+holds(has(sword, X + 1), I + 1) :- occurs(craft(sword), I),
+                                    holds(has(sword, X), I),
+                                    holds(has(iron, Y), I),
+                                    holds(has(stick, Z), I),
+                                    Y >= 2, Z >= 1.
+                                 
+%% Take 2 away from the amount of Iron each craft
+holds(has(iron, X - 2), I + 1) :-  occurs(craft(sword), I),
+                                    holds(has(iron, X), I),
+                                    holds(has(sword, Y), I + 1),
+                                    holds(has(sword, Z), I),
+                                    Y > Z.
+
+%% Take 1 away from the stick each craft
+holds(has(stick, X - 1), I + 1)  :- occurs(craft(sword), I),
+                                    holds(has(stick, X), I),
+                                    holds(has(sword, Y), I + 1),
+                                    holds(has(sword, Z), I),
+                                    Y > Z.
+
+%% has 1 more iron if smelted
+holds(has(iron, X + 1), I + 1) :- occurs(smelt(iron_ore), I),
+                                    holds(has(iron, X), I),
+                                    holds(has(iron_ore, Y), I),
+                                    Y > 0.
+
+%% removes an iron ore every time one is smelted
+holds(has(iron_ore, X - 1), I + 1) :- occurs(smelt(iron_ore), I),
+                                    holds(has(iron_ore, X), I),
+                                    holds(has(iron, Y), I + 1),
+                                    holds(has(iron, Z), I),
+                                    Y > Z.
+
+%% impossible craft if no crafting_table
+-occurs(A, I) :- holds(has(crafting_table, X), I),
+                    X <= 0.                                        
+
+%% impossible smelt if no furnace
+-occurs(A, I) :- holds(has(furnace, X), I),
+                    X <= 0. 
+
+%% Cannot have different amounts at the same time
+-holds(has(F,A), I) :- holds(has(F, Z), I),
+                        A != Z.
+
+
+%% ----------------------
+%% General Inertia Axioms
+%% ----------------------
+
+holds(F,I+1) :- #inertial_fluent(F),
+                holds(F,I),
+                not -holds(F,I+1).
+
+-holds(F,I+1) :- #inertial_fluent(F),
+                 -holds(F,I),
+                 not holds(F,I+1).
+                 
+%% ---------------
+%% CWA for Actions
+%% ---------------
+
+-occurs(A,I) :- not occurs(A,I).
+
+%% ----------------------------------------------
+%% Simple Planning Module using Disjunctive Rule:
+%% ----------------------------------------------   
+  
+success :- goal(I).
+:- not success.
+
+occurs(A,I) | -occurs(A,I) :- not goal(I).
+                              
+%% Do not allow concurrent actions:
+:- occurs(A1,I),
+   occurs(A2,I),
+   A1 != A2.
+
+%% An action occurs at each step before
+%% the goal is achieved:
+
+something_happened(I) :- occurs(A,I).
+
+:- goal(I), not goal(I-1),
+   J < I,
+   not something_happened(J).
+
+%% ------------------
+%% Initial Situation:
+%% ------------------
+
+%% Initial State is 5 Iron Ore, 4 Sticks,
+%% Crafting table and a furnace.
+%% Everything else has zero.
+
+holds(has(iron_ore, 5), 0).
+holds(has(stick, 4), 0).
+holds(has(furnace, 1), 0).
+holds(has(crafting_table, 1), 0).
+holds(has(iron, 0), 0).
+holds(has(sword, 0), 0).
+
+%% -----
+%% Goal:
+%% -----
+
+goal(I) :- holds(has(sword, X), I), X >= 1.
+
+display
+    occurs(A,S).
